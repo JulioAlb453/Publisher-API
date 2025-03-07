@@ -13,6 +13,6 @@ func NewEventRepository(broker *core.BrokerConnection) *EventRepository {
 	return &EventRepository{broker: broker}
 }
 
-func (r *EventRepository) Publish(event *domain.Event) error {
+func (r *EventRepository) Publish(event domain.Event) error {
 	return r.broker.Publish(event.Payload)
 }
