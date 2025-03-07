@@ -1,5 +1,5 @@
 package domain
 
 type EventPublisher interface {
-	Publish(event Event) 
+	Publish(event Event)  error
 }
