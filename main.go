@@ -14,7 +14,11 @@ func main() {
 		log.Fatal("Error al conectar con RabbitMQ", err)
 	}
 
-	defer broker.Close()
+	defer func() {
+		if broker != nil {
+			broker.Close()
+		}
+	}()
 
 	eventRepo := repository.NewEventRepository(broker)
 	httpServer := server.NewServer(eventRepo)

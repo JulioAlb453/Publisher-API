@@ -19,8 +19,8 @@ func NewServer(repo domain.EventPublisher) *Server {
 
 func (s *Server) Start() error {
 	http.HandleFunc("/publish", s.handlerPublishEvent)
-	log.Println("Servidor iniciando en : 8080")
-	return http.ListenAndServe(":8080", nil)
+	log.Println("Servidor iniciando en : 8081")
+	return http.ListenAndServe(":8081", nil)
 }
 
 func (s *Server) handlerPublishEvent(w http.ResponseWriter, r *http.Request) {
