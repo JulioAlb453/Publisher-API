@@ -1,9 +1,9 @@
 package infrastructure
 
 import (
+	"log"
 	"encoding/json"
 	"github.com/streadway/amqp"
-	"log"
 )
 
 type RabbitMQAdapter struct {
@@ -27,12 +27,12 @@ func NewRabbitMQAdapter(rabbitMQURL, queue string) (*RabbitMQAdapter, error) {
 	}
 
 	_, err = ch.QueueDeclare(
-		queue, 
-		true,
-		false, 
-		false, 
-		false,
-		nil,  
+		queue,  
+		true, 
+		false,  
+		false,  
+		false,  
+		nil,    
 	)
 	if err != nil {
 		log.Printf("Error al declarar la cola: %v", err)
@@ -56,59 +56,49 @@ func (r *RabbitMQAdapter) Publish(event interface{}) error {
 		return err
 	}
 
-	log.Printf("Publicando mensaje en la cola %s: %s", r.queue, eventJSON) 
 	return r.channel.Publish(
-		"",
-		r.queue,
-		false,
-		false,
+		"",              
+		"Noticia Publicada",           
+		false,         
+		false,           
 		amqp.Publishing{
-			DeliveryMode: amqp.Persistent, 
-			ContentType:  "application/json",
-			Body:         eventJSON,
+			ContentType: "application/json", 
+			Body:        eventJSON,          
 		},
 	)
 }
 
 func (r *RabbitMQAdapter) ListenToEvent() error {
 	msgs, err := r.channel.Consume(
-		r.queue,
-		"",
-		false, 
-		false,
-		false,
-		false,
-		nil,
+		"Noticia Publicada",   
+		"",        
+		true,      
+		false,    
+		false,   
+		false,    
+		nil,      
 	)
 	if err != nil {
 		log.Printf("Error al crear consumidor: %v", err)
 		return err
 	}
 
-	log.Printf("Consumidor iniciado. Esperando mensajes en la cola %s...", r.queue) // Log agregado
-
 	for msg := range msgs {
-		log.Printf("Mensaje recibido (DeliveryTag: %d): %s", msg.DeliveryTag, msg.Body) // Log agregado
+		log.Printf("Mensaje recibido: %s", msg.Body)
 
 		var event map[string]interface{}
 		err := json.Unmarshal(msg.Body, &event)
 		if err != nil {
-			log.Printf("Error al deserializar el mensaje (DeliveryTag: %d): %v", msg.DeliveryTag, err)
-			msg.Nack(false, false) // Rechazar el mensaje y no reenviarlo
+			log.Printf("Error al deserializar el mensaje: %v", err)
 			continue
 		}
 
-		log.Printf("Evento recibido (DeliveryTag: %d): %+v", msg.DeliveryTag, event)
+		log.Printf("Evento recibido: %+v", event)
 
-		// Procesar el mensaje...
-
-		msg.Ack(false) // Confirmar el mensaje después de procesarlo
 	}
 
 	return nil
 }
-
-// Close cierra la conexión y el canal de RabbitMQ de manera segura.
 func (r *RabbitMQAdapter) Close() {
 	if r.channel != nil {
 		r.channel.Close()
