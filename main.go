@@ -2,28 +2,41 @@ package main
 
 import (
 	"log"
+	"os"
 	"publisher/core"
+	infrastructure "publisher/publisher/infraestructure"
 	"publisher/publisher/infraestructure/repository"
 	"publisher/publisher/infraestructure/server"
+
 )
 
 func main() {
-	broker, err := core.NewBrokerConnection()
+        queueName := "Noticia Publicada" 
+        RABBITMQ_URL:= os.Getenv("RABBITMQ_URL")
 
-	if err != nil {
-		log.Fatal("Error al conectar con RabbitMQ", err)
-	}
+        broker, err := core.NewBrokerConnection(queueName)
+        if err != nil {
+                log.Fatalf("Error al conectar con RabbitMQ: %v", err)
+        }
+        defer broker.Close()
 
-	defer func() {
-		if broker != nil {
-			broker.Close()
-		}
-	}()
+        rabbitMQAdapter, err := infrastructure.NewRabbitMQAdapter(RABBITMQ_URL, queueName)
+        if err != nil {
+                log.Fatalf("Error al crear RabbitMQAdapter: %v", err)
+        }
+        defer rabbitMQAdapter.Close()
 
-	eventRepo := repository.NewEventRepository(broker)
-	httpServer := server.NewServer(eventRepo)
+        go func() {
+                log.Println("Iniciando el servicio de escucha de eventos...")
+                if err := rabbitMQAdapter.ListenToEvent(); err != nil {
+                        log.Fatalf("Error al escuchar eventos: %v", err)
+                }
+        }()
 
-	if err := httpServer.Start(); err != nil {
-		log.Fatal("Error al iniciar el servidor", err)
-	}
+        eventRepo := repository.NewEventRepository(broker)
+
+        httpServer := server.NewServer(eventRepo)
+        if err := httpServer.Start(); err != nil {
+                log.Fatalf("Error al iniciar el servidor HTTP: %v", err)
+        }
 }
