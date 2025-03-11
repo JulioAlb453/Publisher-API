@@ -85,10 +85,10 @@ func (r *RabbitMQAdapter) ListenToEvent() error {
 		return err
 	}
 
-	log.Printf("Consumidor iniciado. Esperando mensajes en la cola %s...", r.queue) // Log agregado
+	log.Printf("Consumidor iniciado. Esperando mensajes en la cola %s...", r.queue) 
 
 	for msg := range msgs {
-		log.Printf("Mensaje recibido (DeliveryTag: %d): %s", msg.DeliveryTag, msg.Body) // Log agregado
+		log.Printf("Mensaje recibido (DeliveryTag: %d): %s", msg.DeliveryTag, msg.Body) 
 
 		var event map[string]interface{}
 		err := json.Unmarshal(msg.Body, &event)
@@ -100,15 +100,13 @@ func (r *RabbitMQAdapter) ListenToEvent() error {
 
 		log.Printf("Evento recibido (DeliveryTag: %d): %+v", msg.DeliveryTag, event)
 
-		// Procesar el mensaje...
 
-		msg.Ack(false) // Confirmar el mensaje después de procesarlo
+		msg.Ack(false)
 	}
 
 	return nil
 }
 
-// Close cierra la conexión y el canal de RabbitMQ de manera segura.
 func (r *RabbitMQAdapter) Close() {
 	if r.channel != nil {
 		r.channel.Close()
